@@ -254,10 +254,14 @@ namespace tremotesf {
     }
 
     void ServerSettings::setAlternativeSpeedLimitsEnabled(bool enabled) {
+        if (mData.alternativeSpeedLimitsEnabled == enabled) {
+            return;
+        }
         mData.alternativeSpeedLimitsEnabled = enabled;
         if (mSaveOnSet) {
             mRpc->setSessionProperty(alternativeSpeedLimitsEnabledKey, mData.alternativeSpeedLimitsEnabled);
         }
+        emit changed();
     }
 
     void ServerSettings::setAlternativeDownloadSpeedLimit(int limit) {

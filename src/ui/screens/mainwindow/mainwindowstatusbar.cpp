@@ -12,9 +12,11 @@
 #include <QMenu>
 #include <QPainter>
 #include <QStyleOption>
+#include <QToolButton>
 
 #include "log/log.h"
 #include "rpc/serverstats.h"
+#include "rpc/serversettings.h"
 #include "rpc/servers.h"
 #include "rpc/rpc.h"
 #include "formatutils.h"
@@ -24,6 +26,8 @@ using namespace Qt::StringLiterals;
 namespace tremotesf {
     MainWindowStatusBar::MainWindowStatusBar(const Rpc* rpc, QWidget* parent) : QStatusBar(parent), mRpc(rpc) {
         setSizeGripEnabled(false);
+        // Keep permanent widgets (alternative speed limits button) away from the window edge
+        setContentsMargins(0, 0, 8, 0);
 
         setContextMenuPolicy(Qt::CustomContextMenu);
         QObject::connect(this, &QWidget::customContextMenuRequested, this, &MainWindowStatusBar::showContextMenu);
@@ -79,9 +83,33 @@ namespace tremotesf {
         mFreeSpaceLabel->setContentsMargins(8, 0, 0, 0);
         layout->addWidget(mFreeSpaceLabel);
 
+        mAlternativeSpeedLimitsButton = new QToolButton(this);
+        mAlternativeSpeedLimitsButton->setText(QStringLiteral("🐌"));
+        mAlternativeSpeedLimitsButton->setCheckable(true);
+        mAlternativeSpeedLimitsButton->setAutoRaise(true);
+        mAlternativeSpeedLimitsButton->setToolTip(qApp->translate("tremotesf", "Alternative speed limits"));
+        addPermanentWidget(mAlternativeSpeedLimitsButton);
+        QObject::connect(mAlternativeSpeedLimitsButton, &QAbstractButton::clicked, this, [this](bool checked) {
+            mRpc->serverSettings()->setAlternativeSpeedLimitsEnabled(checked);
+        });
+        QObject::connect(
+            mRpc->serverSettings(),
+            &ServerSettings::changed,
+            this,
+            &MainWindowStatusBar::updateAlternativeSpeedLimitsButton
+        );
+
         updateLayout();
         QObject::connect(mRpc, &Rpc::connectionStateChanged, this, &MainWindowStatusBar::updateLayout);
         QObject::connect(Servers::instance(), &Servers::hasServersChanged, this, &MainWindowStatusBar::updateLayout);
+
+        updateAlternativeSpeedLimitsButton();
+        QObject::connect(
+            mRpc,
+            &Rpc::connectionStateChanged,
+            this,
+            &MainWindowStatusBar::updateAlternativeSpeedLimitsButton
+        );
 
         updateServerLabel();
         QObject::connect(
@@ -123,6 +151,7 @@ namespace tremotesf {
                 mUploadSpeedLabel->show();
                 mFourthSeparator->show();
                 mFreeSpaceLabel->show();
+                mAlternativeSpeedLimitsButton->show();
             } else {
                 mSecondSeparator->hide();
                 mDownloadSpeedImage->hide();
@@ -132,6 +161,7 @@ namespace tremotesf {
                 mUploadSpeedLabel->hide();
                 mFourthSeparator->hide();
                 mFreeSpaceLabel->hide();
+                mAlternativeSpeedLimitsButton->hide();
             }
         } else {
             mNoServersErrorImage->show();
@@ -145,6 +175,7 @@ namespace tremotesf {
             mUploadSpeedImage->hide();
             mUploadSpeedLabel->hide();
             mFreeSpaceLabel->hide();
+            mAlternativeSpeedLimitsButton->hide();
         }
     }
 
@@ -166,6 +197,10 @@ namespace tremotesf {
         } else {
             mStatusLabel->setToolTip({});
         }
+    }
+
+    void MainWindowStatusBar::updateAlternativeSpeedLimitsButton() {
+        mAlternativeSpeedLimitsButton->setChecked(mRpc->serverSettings()->data().alternativeSpeedLimitsEnabled);
     }
 
     void MainWindowStatusBar::showContextMenu(QPoint pos) {

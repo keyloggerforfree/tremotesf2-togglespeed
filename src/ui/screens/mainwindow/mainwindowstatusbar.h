@@ -8,6 +8,7 @@
 #include <QStatusBar>
 
 class QLabel;
+class QToolButton;
 
 namespace tremotesf {
     class Rpc;
@@ -24,6 +25,7 @@ namespace tremotesf {
         void updateLayout();
         void updateServerLabel();
         void updateStatusLabels();
+        void updateAlternativeSpeedLimitsButton();
         void showContextMenu(QPoint pos);
 
         const Rpc* mRpc{};
@@ -39,6 +41,7 @@ namespace tremotesf {
         QLabel* mUploadSpeedLabel{};
         StatusBarSeparator* mFourthSeparator{};
         QLabel* mFreeSpaceLabel{};
+        QToolButton* mAlternativeSpeedLimitsButton{};
 
     signals:
         void showConnectionSettingsDialog();
